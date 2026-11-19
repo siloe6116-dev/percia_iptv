@@ -1,0 +1,1069 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101010">
+<title>PERCIA IPTV</title>
+
+<style>
+:root {
+  --bg:#101010;
+  --panel:#191919;
+  --gold:#c9aa68;
+  --text:#f5f2eb;
+  --line:#353535;
+}
+
+* {
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+  min-height:100vh;
+}
+
+header {
+  background:#151515;
+  padding:11px 17px;
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+
+.logo {
+  font-size:22px;
+  font-weight:800;
+  letter-spacing:2px;
+}
+
+.logo span {
+  color:var(--gold);
+}
+
+.container {
+  width:100%;
+  max-width:850px;
+  margin:auto;
+  padding:7px;
+}
+
+.card {
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:9px;
+  margin-bottom:8px;
+}
+
+label {
+  display:block;
+  color:#ccc;
+  font-size:12px;
+  margin:6px 0 4px;
+}
+
+label[for="profileName"],
+label[for="server"],
+label[for="username"],
+label[for="password"] {
+  display:none;
+}
+
+input,textarea {
+  width:100%;
+  background:#101010;
+  color:white;
+  border:1px solid #393939;
+  border-radius:7px;
+  padding:9px;
+  font-size:13px;
+  outline:none;
+}
+
+input:focus,textarea:focus {
+  border-color:var(--gold);
+}
+
+#profileName,
+#server,
+#username {
+  margin-top:5px;
+}
+
+textarea {
+  height:43px;
+  min-height:43px;
+  resize:vertical;
+}
+
+button {
+  border:0;
+  border-radius:7px;
+  padding:9px;
+  background:var(--gold);
+  color:#17130c;
+  font-size:11px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button:disabled {
+  opacity:.55;
+}
+
+.full {
+  width:100%;
+  margin-top:6px;
+}
+
+.secondary {
+  background:#292929;
+  color:#eee;
+  border:1px solid #414141;
+}
+
+.danger {
+  background:#382020;
+  color:#ffbcbc;
+}
+
+.divider {
+  height:1px;
+  background:#383838;
+  margin:8px 0;
+}
+
+.message {
+  display:none;
+  margin-top:8px;
+  padding:9px;
+  border-radius:8px;
+  font-size:12px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+
+.message.show {
+  display:block;
+}
+
+.message.error {
+  background:#351d1d;
+  color:#ffb4b4;
+}
+
+.message.success {
+  background:#1c3024;
+  color:#b9edc8;
+}
+
+.message.info {
+  background:#29251d;
+  color:#e4d1a2;
+}
+
+.profile {
+  background:#101010;
+  border:1px solid #393939;
+  border-radius:9px;
+  padding:8px;
+  margin-top:6px;
+}
+
+.profile-name {
+  font-size:13px;
+  font-weight:bold;
+  overflow-wrap:anywhere;
+}
+
+.profile-actions {
+  display:flex;
+  gap:5px;
+  margin-top:7px;
+}
+
+.profile-actions button {
+  flex:1;
+  padding:8px 2px;
+  font-size:9px;
+}
+
+.empty {
+  color:#888;
+  text-align:center;
+  padding:8px 3px;
+  font-size:12px;
+}
+
+#catalogScreen {
+  display:none;
+}
+
+.catalog-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:8px 0 12px;
+}
+
+.catalog-header h2 {
+  font-size:19px;
+}
+
+.catalog-count {
+  color:var(--gold);
+  font-size:12px;
+}
+
+.category-list {
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  padding:10px 0;
+}
+
+.category-chip {
+  white-space:nowrap;
+  background:#292929;
+  color:#ddd;
+  border:1px solid #444;
+  border-radius:20px;
+  padding:9px 13px;
+  margin:0;
+  font-size:11px;
+}
+
+.category-chip.active {
+  background:var(--gold);
+  color:#17130c;
+}
+
+.movie-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+}
+
+.movie-card {
+  background:#191919;
+  border:1px solid #303030;
+  border-radius:8px;
+  overflow:hidden;
+  cursor:pointer;
+}
+
+.poster,.poster-placeholder {
+  width:100%;
+  aspect-ratio:2/3;
+  object-fit:cover;
+  background:#252525;
+}
+
+.poster-placeholder {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--gold);
+  font-size:25px;
+}
+
+.movie-name {
+  padding:8px;
+  font-size:11px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+
+.movie-detail {
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:30;
+  background:rgba(0,0,0,.9);
+  padding:15px;
+  overflow:auto;
+  align-items:center;
+  justify-content:center;
+}
+
+.detail-box {
+  width:100%;
+  max-width:400px;
+  background:#1b1b1b;
+  border:1px solid #51452f;
+  border-radius:12px;
+  padding:15px;
+}
+
+.detail-box img {
+  display:block;
+  width:120px;
+  max-height:180px;
+  object-fit:cover;
+  margin:0 auto 12px;
+}
+
+.detail-box h3 {
+  text-align:center;
+  margin-bottom:10px;
+}
+
+.detail-box p {
+  color:#aaa;
+  font-size:12px;
+  line-height:1.5;
+}
+
+@media(max-width:360px) {
+  .movie-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(min-width:650px) {
+  .movie-grid {
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+}
+
+/* Reproductor exclusivo de Películas */
+#moviePlayerScreen {
+  display:none;
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  height:100dvh;
+  z-index:9999;
+  background:#000;
+  color:#fff;
+  overflow:hidden;
+}
+#moviePlayerScreen.active { display:flex; }
+#movieVideo {
+  width:100%;
+  height:100%;
+  background:#000;
+  object-fit:contain;
+}
+#moviePlayerScreen:fullscreen {
+  width:100%;
+  height:100%;
+  background:#000;
+}
+#moviePlayerScreen:-webkit-full-screen {
+  width:100%;
+  height:100%;
+  background:#000;
+}
+.player-topbar {
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;
+  background:linear-gradient(#000b,transparent);
+  pointer-events:none;
+}
+.player-topbar button { pointer-events:auto; }
+.player-title {
+  max-width:75%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#fff;
+  font-size:14px;
+  font-weight:bold;
+  text-shadow:0 1px 4px #000;
+}
+#closeMoviePlayer {
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  padding:0;
+  background:#242424dd;
+  border:1px solid #ffffff40;
+  color:#fff;
+  font-size:25px;
+}
+#moviePlayerMessage {
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:calc(env(safe-area-inset-bottom) + 70px);
+  z-index:3;
+  color:#fff;
+  background:#261b1bdf;
+  border:1px solid #754444;
+  border-radius:8px;
+  padding:10px;
+  font-size:12px;
+  display:none;
+}
+#moviePlayerMessage.show { display:block; }
+
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">PERCIA <span>IPTV</span></div>
+</header>
+
+<main class="container">
+
+<section id="connectionScreen">
+
+  <div class="card">
+    <form id="profileForm">
+
+      <label for="fullUrl">Pegar URL</label>
+      <textarea id="fullUrl" placeholder="URL completa"></textarea>
+
+      <button type="button" class="secondary full" id="extractButton">
+        EXTRAER URL
+      </button>
+
+      <div id="urlMessage" class="message"></div>
+
+      <div class="divider"></div>
+
+      <label for="profileName">Nombre</label>
+      <input id="profileName" placeholder="Nombre del perfil" required>
+
+      <label for="server">Servidor</label>
+      <input id="server" type="url" placeholder="http://servidor.com:8080" required>
+
+      <label for="username">Usuario</label>
+      <input id="username" placeholder="Usuario" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Password" required>
+
+      <button type="submit" class="full" id="connectButton">
+        CONECTAR
+      </button>
+
+      <button type="button" class="secondary full" id="clearButton">
+        LIMPIAR
+      </button>
+
+      <div id="connectionMessage" class="message"></div>
+
+    </form>
+  </div>
+
+  <div class="card">
+    <div id="profilesList"></div>
+  </div>
+
+</section>
+
+<section id="catalogScreen">
+
+  <button class="secondary full" id="backButton">← VOLVER</button>
+
+  <div class="catalog-header">
+    <h2>Películas</h2>
+    <span class="catalog-count" id="movieCount">0 películas</span>
+  </div>
+
+  <input id="movieSearch" placeholder="Buscar película...">
+
+  <div class="category-list" id="categoryList"></div>
+
+  <div id="catalogMessage" class="message"></div>
+
+  <div class="movie-grid" id="movieGrid"></div>
+
+  <button class="secondary full" id="loadMoreButton" style="display:none">
+    CARGAR MÁS
+  </button>
+
+</section>
+</main>
+
+<div class="movie-detail" id="movieDetail">
+  <div class="detail-box">
+    <img id="detailPoster" src="" alt="">
+    <h3 id="detailTitle"></h3>
+    <p id="detailDescription"></p>
+    <button class="full" id="prepareMovieButton">REPRODUCIR</button>
+    <button class="secondary full" id="closeDetail">CERRAR</button>
+  </div>
+</div>
+
+
+<div id="moviePlayerScreen" aria-label="Reproductor de películas">
+  <video id="movieVideo" controls playsinline webkit-playsinline preload="metadata"></video>
+  <div class="player-topbar">
+    <div id="moviePlayerTitle" class="player-title">PERCIA IPTV</div>
+    <button id="closeMoviePlayer" type="button" aria-label="Cerrar reproductor">×</button>
+  </div>
+  <div id="moviePlayerMessage"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+
+<script>
+const STORAGE_KEY = 'percia_iptv_profiles_v1';
+const $ = id => document.getElementById(id);
+
+let profiles = [];
+let editingId = null;
+let activeProfile = null;
+let allMovies = [];
+let filteredMovies = [];
+let visibleMovies = 30;
+let selectedMovie = null;
+let movieHls = null;
+let currentMovieUrl = '';
+
+function message(id,text,type) {
+  $(id).textContent = text;
+  $(id).className = 'message show ' + type;
+}
+
+function hideMessage(id) {
+  $(id).textContent = '';
+  $(id).className = 'message';
+}
+
+function loadProfiles() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    profiles = Array.isArray(data) ? data : [];
+  } catch {
+    profiles = [];
+  }
+  renderProfiles();
+}
+
+function saveProfiles() {
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(profiles));
+  renderProfiles();
+}
+
+function extractUrl() {
+  try {
+    const parsed = new URL($('fullUrl').value.trim());
+    const username = parsed.searchParams.get('username');
+    const password = parsed.searchParams.get('password');
+
+    if (!username || !password) {
+      throw new Error('URL Xtream no válida');
+    }
+
+    $('server').value = parsed.origin;
+    $('username').value = username;
+    $('password').value = password;
+
+    if (!$('profileName').value.trim()) {
+      $('profileName').value = 'Mi IPTV';
+    }
+
+    message('urlMessage','Datos extraídos.','success');
+
+  } catch(error) {
+    message('urlMessage',error.message || 'URL no válida.','error');
+  }
+}
+
+$('extractButton').addEventListener('click',extractUrl);
+
+function clearForm() {
+  $('profileForm').reset();
+  editingId = null;
+  $('connectButton').textContent = 'CONECTAR';
+  hideMessage('urlMessage');
+  hideMessage('connectionMessage');
+}
+
+$('clearButton').addEventListener('click',clearForm);
+
+function normalizeServer(value) {
+  return value.trim().replace(/\/+$/,'');
+}
+
+function apiUrl(profile,extra={}) {
+  const url = new URL('/player_api.php',profile.server);
+  url.searchParams.set('username',profile.username);
+  url.searchParams.set('password',profile.password);
+
+  Object.entries(extra).forEach(([key,value]) => {
+    if (value !== null && value !== undefined) {
+      url.searchParams.set(key,value);
+    }
+  });
+
+  return url;
+}
+
+async function fetchJson(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(),20000);
+
+  try {
+    const response = await fetch(url.toString(),{
+      method:'GET',
+      signal:controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+$('profileForm').addEventListener('submit',async event => {
+  event.preventDefault();
+
+  const name = $('profileName').value.trim();
+  const server = normalizeServer($('server').value);
+  const username = $('username').value.trim();
+  const password = $('password').value;
+
+  if (!name || !server || !username || !password) {
+    message('connectionMessage','Completa todos los campos.','error');
+    return;
+  }
+
+  try {
+    const parsed = new URL(server);
+    if (!['http:','https:'].includes(parsed.protocol)) throw new Error();
+  } catch {
+    message('connectionMessage','Servidor no válido.','error');
+    return;
+  }
+
+  await connectProfile({
+    id:editingId || Date.now().toString(),
+    name,
+    server,
+    username,
+    password
+  });
+});
+
+async function connectProfile(profile) {
+  const button = $('connectButton');
+  button.disabled = true;
+  button.textContent = 'CONECTANDO...';
+
+  message('connectionMessage','Conectando...','info');
+
+  try {
+    const data = await fetchJson(apiUrl(profile));
+
+    if (!data || !data.user_info || Number(data.user_info.auth) !== 1) {
+      throw new Error('Credenciales incorrectas.');
+    }
+
+    const index = profiles.findIndex(p => p.id === profile.id);
+
+    if (index >= 0) profiles[index] = profile;
+    else profiles.push(profile);
+
+    saveProfiles();
+
+    activeProfile = profile;
+    editingId = null;
+
+    await openCatalog();
+
+  } catch(error) {
+    let detail = error.message;
+
+    if (error.name === 'AbortError') detail = 'Tiempo de espera agotado.';
+    if (error instanceof TypeError) detail = 'No se pudo acceder al servidor. Posible error de CORS o conexión.';
+
+    message('connectionMessage',detail,'error');
+
+  } finally {
+    button.disabled = false;
+    button.textContent = 'CONECTAR';
+  }
+}
+
+function editProfile(id) {
+  const p = profiles.find(item => item.id === id);
+  if (!p) return;
+
+  editingId = id;
+  $('profileName').value = p.name;
+  $('server').value = p.server;
+  $('username').value = p.username;
+  $('password').value = p.password;
+  $('fullUrl').value = '';
+  $('connectButton').textContent = 'ACTUALIZAR Y CONECTAR';
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function deleteProfile(id) {
+  const p = profiles.find(item => item.id === id);
+  if (!p || !confirm('¿Eliminar este perfil?')) return;
+
+  profiles = profiles.filter(item => item.id !== id);
+  saveProfiles();
+
+  if (editingId === id) clearForm();
+}
+
+function renderProfiles() {
+  const container = $('profilesList');
+  container.replaceChildren();
+
+  const title = document.createElement('div');
+  title.textContent = 'Perfiles guardados';
+  title.style.cssText = 'font-size:16px;font-weight:bold;margin-bottom:8px';
+  container.appendChild(title);
+
+  if (!profiles.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Sin perfiles guardados';
+    container.appendChild(empty);
+    return;
+  }
+
+  profiles.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'profile';
+
+    const name = document.createElement('div');
+    name.className = 'profile-name';
+    name.textContent = p.name || 'Perfil sin nombre';
+
+    const actions = document.createElement('div');
+    actions.className = 'profile-actions';
+
+    const connect = document.createElement('button');
+    connect.textContent = 'CONECTAR';
+    connect.addEventListener('click',() => connectSavedProfile(p));
+
+    const edit = document.createElement('button');
+    edit.className = 'secondary';
+    edit.textContent = 'EDITAR';
+    edit.addEventListener('click',() => editProfile(p.id));
+
+    const remove = document.createElement('button');
+    remove.className = 'danger';
+    remove.textContent = 'ELIMINAR';
+    remove.addEventListener('click',() => deleteProfile(p.id));
+
+    actions.append(connect,edit,remove);
+    item.append(name,actions);
+    container.appendChild(item);
+  });
+}
+
+async function connectSavedProfile(profile) {
+  $('profileName').value = profile.name;
+  $('server').value = profile.server;
+  $('username').value = profile.username;
+  $('password').value = profile.password;
+  editingId = profile.id;
+  await connectProfile(profile);
+}
+
+async function openCatalog() {
+  $('connectionScreen').style.display = 'none';
+  $('catalogScreen').style.display = 'block';
+  $('movieSearch').value = '';
+  $('movieGrid').replaceChildren();
+  $('categoryList').replaceChildren();
+  await loadMovieCategories();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+$('backButton').addEventListener('click',() => {
+  $('catalogScreen').style.display = 'none';
+  $('connectionScreen').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+async function loadMovieCategories() {
+  if (!activeProfile) return;
+
+  message('catalogMessage','Cargando...','info');
+
+  try {
+    const data = await fetchJson(apiUrl(activeProfile,{
+      action:'get_vod_categories'
+    }));
+
+    if (!Array.isArray(data)) throw new Error('Respuesta no válida.');
+
+    renderCategories(data);
+    await loadMovies('all');
+
+  } catch(error) {
+    message('catalogMessage','Error al cargar categorías: ' + error.message,'error');
+  }
+}
+
+function renderCategories(categories) {
+  $('categoryList').replaceChildren();
+  addCategoryButton('Todas','all');
+
+  categories.forEach(category => {
+    addCategoryButton(category.category_name || 'Sin nombre',String(category.category_id));
+  });
+}
+
+function addCategoryButton(name,id) {
+  const button = document.createElement('button');
+  button.className = 'category-chip' + (id === 'all' ? ' active' : '');
+  button.textContent = name;
+
+  button.addEventListener('click',() => {
+    document.querySelectorAll('.category-chip').forEach(b => b.classList.remove('active'));
+    button.classList.add('active');
+    loadMovies(id);
+  });
+
+  $('categoryList').appendChild(button);
+}
+
+async function loadMovies(categoryId) {
+  if (!activeProfile) return;
+
+  visibleMovies = 30;
+  $('movieGrid').replaceChildren();
+  $('loadMoreButton').style.display = 'none';
+
+  message('catalogMessage','Cargando películas...','info');
+
+  try {
+    const extra = {action:'get_vod_streams'};
+    if (categoryId !== 'all') extra.category_id = categoryId;
+
+    const data = await fetchJson(apiUrl(activeProfile,extra));
+    if (!Array.isArray(data)) throw new Error('Respuesta no válida.');
+
+    allMovies = data;
+    applyMovieSearch();
+
+    message('catalogMessage',data.length ? 'Películas cargadas.' : 'Sin películas.',data.length ? 'success' : 'info');
+
+  } catch(error) {
+    message('catalogMessage','Error al cargar películas: ' + error.message,'error');
+  }
+}
+
+function applyMovieSearch() {
+  const term = $('movieSearch').value.trim().toLowerCase();
+
+  filteredMovies = allMovies.filter(movie =>
+    String(movie.name || '').toLowerCase().includes(term)
+  );
+
+  visibleMovies = 30;
+  renderMovies();
+}
+
+$('movieSearch').addEventListener('input',applyMovieSearch);
+
+function renderMovies() {
+  const grid = $('movieGrid');
+  grid.replaceChildren();
+
+  const items = filteredMovies.slice(0,visibleMovies);
+  $('movieCount').textContent = filteredMovies.length + ' películas';
+
+  items.forEach(movie => {
+    const card = document.createElement('div');
+    card.className = 'movie-card';
+
+    if (movie.stream_icon) {
+      const img = document.createElement('img');
+      img.className = 'poster';
+      img.src = movie.stream_icon;
+      img.alt = movie.name || 'Película';
+      img.loading = 'lazy';
+
+      img.onerror = () => {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'poster-placeholder';
+        placeholder.textContent = '🎬';
+        img.replaceWith(placeholder);
+      };
+
+      card.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'poster-placeholder';
+      placeholder.textContent = '🎬';
+      card.appendChild(placeholder);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'movie-name';
+    title.textContent = movie.name || 'Película';
+
+    card.append(title);
+    card.addEventListener('click',() => showMovieDetail(movie));
+    grid.appendChild(card);
+  });
+
+  $('loadMoreButton').style.display =
+    visibleMovies < filteredMovies.length ? 'block' : 'none';
+
+  if (!filteredMovies.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Sin resultados';
+    grid.appendChild(empty);
+  }
+}
+
+$('loadMoreButton').addEventListener('click',() => {
+  visibleMovies += 30;
+  renderMovies();
+});
+
+function showMovieDetail(movie) {
+  selectedMovie = movie;
+  $('detailTitle').textContent = movie.name || 'Película';
+  $('detailDescription').textContent = movie.plot || movie.description || '';
+  $('detailPoster').src = movie.stream_icon || '';
+  $('detailPoster').style.display = movie.stream_icon ? 'block' : 'none';
+  $('movieDetail').style.display = 'flex';
+}
+
+$('closeDetail').addEventListener('click',() => {
+  $('movieDetail').style.display = 'none';
+});
+
+$('movieDetail').addEventListener('click',event => {
+  if (event.target === $('movieDetail')) {
+    $('movieDetail').style.display = 'none';
+  }
+});
+
+
+function buildMovieUrl(movie) {
+  if (movie.direct_source) return movie.direct_source;
+  if (movie.stream_url) return movie.stream_url;
+  if (!activeProfile || !movie.stream_id) {
+    throw new Error('No se encontró el identificador de reproducción de esta película.');
+  }
+  const extension = String(movie.container_extension || 'mp4').replace(/[^a-z0-9]/gi,'') || 'mp4';
+  return activeProfile.server.replace(/\/+$/,'') + '/movie/' +
+    encodeURIComponent(activeProfile.username) + '/' +
+    encodeURIComponent(activeProfile.password) + '/' +
+    encodeURIComponent(movie.stream_id) + '.' + extension;
+}
+
+function showPlayerMessage(text) {
+  $('moviePlayerMessage').textContent = text;
+  $('moviePlayerMessage').classList.add('show');
+}
+function clearPlayerMessage() {
+  $('moviePlayerMessage').textContent = '';
+  $('moviePlayerMessage').classList.remove('show');
+}
+function stopMoviePlayback() {
+  if (movieHls) {
+    movieHls.destroy();
+    movieHls = null;
+  }
+  const video = $('movieVideo');
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  currentMovieUrl = '';
+}
+async function openMoviePlayer(movie) {
+  const screen = $('moviePlayerScreen');
+  const video = $('movieVideo');
+  $('moviePlayerTitle').textContent = movie.name || 'PERCIA IPTV';
+  $('movieDetail').style.display = 'none';
+  clearPlayerMessage();
+  stopMoviePlayback();
+
+  try {
+    currentMovieUrl = buildMovieUrl(movie);
+  } catch (error) {
+    screen.classList.add('active');
+    showPlayerMessage(error.message);
+    return;
+  }
+
+  screen.classList.add('active');
+
+  // Solicitar pantalla completa desde el toque del usuario.
+  // En Android Chrome esto activa el modo de pantalla completa del navegador.
+  let fullscreenPromise = null;
+  if (screen.requestFullscreen) {
+    try { fullscreenPromise = screen.requestFullscreen({navigationUI:'hide'}); }
+    catch (_) { fullscreenPromise = null; }
+  }
+
+  const isHls = /\.m3u8($|\?)/i.test(currentMovieUrl);
+  if (isHls && window.Hls && Hls.isSupported()) {
+    movieHls = new Hls({enableWorker:true});
+    movieHls.loadSource(currentMovieUrl);
+    movieHls.attachMedia(video);
+    movieHls.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) showPlayerMessage('No se pudo reproducir. Comprueba el acceso al servidor y el formato del vídeo.');
+    });
+  } else {
+    video.src = currentMovieUrl;
+  }
+
+  if (fullscreenPromise && typeof fullscreenPromise.catch === 'function') {
+    fullscreenPromise.catch(() => {
+      // El reproductor permanece en pantalla completa visual aunque el navegador
+      // no permita el modo fullscreen nativo.
+    });
+  }
+  video.play().catch(() => {
+    showPlayerMessage('Pulsa ▶ en los controles para iniciar la película. Si no reproduce, el formato puede no ser compatible con el navegador.');
+  });
+}
+async function closeMoviePlayer() {
+  stopMoviePlayback();
+  $('moviePlayerScreen').classList.remove('active');
+  if (document.fullscreenElement && document.exitFullscreen) {
+    try { await document.exitFullscreen(); } catch (_) {}
+  }
+  try {
+    if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+  } catch (_) {}
+}
+$('prepareMovieButton').addEventListener('click',() => {
+  if (selectedMovie) openMoviePlayer(selectedMovie);
+});
+$('closeMoviePlayer').addEventListener('click',closeMoviePlayer);
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && $('moviePlayerScreen').classList.contains('active')) {
+    // Si Escape sale del fullscreen, cerrar también el reproductor.
+    closeMoviePlayer();
+  }
+});
+
+
+loadProfiles();
+</script>
+
+</body>
+</html>
