@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(web);
-        web.loadUrl("file:///android_asset/3%20PERCIA_IPTV_BASE/index.html");
+        web.loadUrl("file:///android_asset/index.html");
     }
     @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus); if (hasFocus) immersive();
