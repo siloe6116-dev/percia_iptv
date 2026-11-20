@@ -528,6 +528,7 @@ button:disabled {
 
   <button class="secondary full" id="backButton">← VOLVER</button>
   <button class="full" id="openLiveButton" style="margin-top:8px">📺 TV EN VIVO</button>
+  <button class="secondary full" id="openSeriesButton" style="margin-top:8px">🎬 SERIES</button>
 
   <div class="catalog-header">
     <h2>Películas</h2>
@@ -558,6 +559,20 @@ button:disabled {
   <div class="category-list" id="liveCategoryList"></div>
   <div id="liveMessage" class="message"></div>
   <div class="movie-grid" id="liveGrid"></div>
+</section>
+
+<!-- MÓDULO SERIES: independiente de Películas y TV EN VIVO -->
+<section id="seriesScreen" style="display:none">
+  <button class="secondary full" id="seriesBackButton">← VOLVER A PELÍCULAS</button>
+  <div class="catalog-header">
+    <h2>SERIES</h2>
+    <span class="catalog-count" id="seriesCount">0 series</span>
+  </div>
+  <input id="seriesSearch" placeholder="Buscar serie..." autocomplete="off">
+  <div class="category-list" id="seriesCategoryList"></div>
+  <div id="seriesMessage" class="message"></div>
+  <div class="movie-grid" id="seriesGrid"></div>
+  <button class="secondary full" id="seriesLoadMoreButton" style="display:none">CARGAR MÁS</button>
 </section>
 </main>
 
@@ -1316,6 +1331,139 @@ function revealLiveOverlay(e){
 livePlayerScreen.addEventListener('pointerdown', revealLiveOverlay, true);
 livePlayerScreen.addEventListener('touchstart', revealLiveOverlay, {capture:true, passive:true});
 livePlayerScreen.addEventListener('click', revealLiveOverlay, true);
+
+
+
+// ================= SERIES (módulo independiente) =================
+(() => {
+  const seriesState = {
+    all: [],
+    filtered: [],
+    category: 'all',
+    visible: 30,
+    categories: []
+  };
+  const seriesEl = id => document.getElementById(id);
+  function seriesMessage(text, type='info') {
+    const el = seriesEl('seriesMessage');
+    el.textContent = text;
+    el.className = 'message show ' + type;
+  }
+  function renderSeriesCategories(categories) {
+    const wrap = seriesEl('seriesCategoryList');
+    wrap.replaceChildren();
+    const add = (name, id) => {
+      const button = document.createElement('button');
+      button.className = 'category-chip' +
+        (String(id) === String(seriesState.category) ? ' active' : '');
+      button.textContent = name;
+      button.addEventListener('click', () => {
+        seriesState.category = String(id);
+        renderSeriesCategories(seriesState.categories);
+        loadSeriesCatalog(id);
+      });
+      wrap.appendChild(button);
+    };
+    add('Todas', 'all');
+    categories.forEach(category =>
+      add(category.category_name || 'Sin categoría', category.category_id)
+    );
+  }
+  function applySeriesSearch() {
+    const term = seriesEl('seriesSearch').value.trim().toLowerCase();
+    seriesState.filtered = seriesState.all.filter(item =>
+      String(item.name || '').toLowerCase().includes(term)
+    );
+    seriesState.visible = 30;
+    renderSeriesCatalog();
+  }
+  function renderSeriesCatalog() {
+    const grid = seriesEl('seriesGrid');
+    grid.replaceChildren();
+    const items = seriesState.filtered.slice(0, seriesState.visible);
+    seriesEl('seriesCount').textContent = seriesState.filtered.length + ' series';
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'movie-card';
+      const poster = document.createElement('img');
+      poster.className = 'movie-poster';
+      poster.loading = 'lazy';
+      poster.alt = item.name || 'Serie';
+      poster.src = item.cover || item.stream_icon || '';
+      poster.onerror = () => { poster.style.display = 'none'; };
+      const title = document.createElement('div');
+      title.className = 'movie-title';
+      title.textContent = item.name || 'Serie';
+      const category = document.createElement('div');
+      category.className = 'movie-meta';
+      category.textContent = item.category_name || 'Series';
+      card.append(poster, title, category);
+      grid.appendChild(card);
+    });
+    seriesEl('seriesLoadMoreButton').style.display =
+      seriesState.visible < seriesState.filtered.length ? 'block' : 'none';
+    if (!seriesState.filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'No hay series para mostrar.';
+      grid.appendChild(empty);
+    }
+  }
+  async function loadSeriesCatalog(categoryId='all') {
+    if (!window.activeProfile && typeof activeProfile === 'undefined') {
+      seriesMessage('Primero conecta un perfil Xtream.', 'error');
+      return;
+    }
+    seriesMessage('Cargando series...');
+    seriesEl('seriesGrid').replaceChildren();
+    try {
+      const params = { action: 'get_series' };
+      if (String(categoryId) !== 'all') params.category_id = categoryId;
+      const data = await fetchJson(apiUrl(activeProfile, params));
+      if (!Array.isArray(data)) throw new Error('El servidor no devolvió un catálogo válido.');
+      seriesState.all = data;
+      applySeriesSearch();
+      seriesMessage(data.length ? 'Catálogo de series cargado.' : 'No hay series en esta categoría.',
+        data.length ? 'success' : 'info');
+    } catch (error) {
+      seriesMessage('Error al cargar series: ' + (error.message || 'Error desconocido'), 'error');
+    }
+  }
+  async function openSeries() {
+    if (!activeProfile) {
+      seriesMessage('Primero conecta un perfil Xtream.', 'error');
+      return;
+    }
+    seriesEl('catalogScreen').style.display = 'none';
+    seriesEl('connectionScreen').style.display = 'none';
+    seriesEl('liveScreen').style.display = 'none';
+    seriesEl('seriesScreen').style.display = 'block';
+    seriesEl('seriesSearch').value = '';
+    seriesState.category = 'all';
+    seriesMessage('Cargando categorías de series...');
+    try {
+      const categories = await fetchJson(apiUrl(activeProfile, { action: 'get_series_categories' }));
+      if (!Array.isArray(categories)) throw new Error('Respuesta de categorías no válida.');
+      seriesState.categories = categories;
+      renderSeriesCategories(categories);
+      await loadSeriesCatalog('all');
+    } catch (error) {
+      seriesMessage('No se pudieron cargar las categorías: ' + (error.message || 'Error desconocido'), 'error');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  seriesEl('openSeriesButton').addEventListener('click', openSeries);
+  seriesEl('seriesBackButton').addEventListener('click', () => {
+    seriesEl('seriesScreen').style.display = 'none';
+    seriesEl('catalogScreen').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  seriesEl('seriesSearch').addEventListener('input', applySeriesSearch);
+  seriesEl('seriesLoadMoreButton').addEventListener('click', () => {
+    seriesState.visible += 30;
+    renderSeriesCatalog();
+  });
+})();
 
 </script>
 
