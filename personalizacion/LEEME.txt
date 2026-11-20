@@ -1,0 +1,4 @@
+Coloca aquí las imágenes antes de compilar el APK.
+
+icono.png = Icono de PERCIA IPTV
+inicio.png = Pantalla de inicio de PERCIA IPTV
