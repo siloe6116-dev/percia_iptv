@@ -1,4 +1,3 @@
-
 name: Build PERCIA IPTV APK
 
 on:
@@ -9,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Descargar proyecto
         uses: actions/checkout@v4
