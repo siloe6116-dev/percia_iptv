@@ -51,13 +51,31 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(web);
-        web.loadUrl("file:///android_asset/index.html");
+        web.loadUrl("file:///android_asset/3%20PERCIA_IPTV_BASE/index.html");
     }
     @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus); if (hasFocus) immersive();
     }
     @Override public void onBackPressed() {
-        if (customView != null) { ((WebChromeClient)web.getWebChromeClient()).onHideCustomView(); }
-        else if (web.canGoBack()) web.goBack(); else super.onBackPressed();
+        if (customView != null) {
+            ((FrameLayout)findViewById(android.R.id.content)).removeView(customView);
+            customView = null;
+            web.setVisibility(View.VISIBLE);
+            immersive();
+            return;
+        }
+        if (web != null) {
+            web.evaluateJavascript(
+                "(window.handleAndroidBack ? window.handleAndroidBack() : false)",
+                value -> {
+                    if (!"true".equals(value)) {
+                        if (web.canGoBack()) web.goBack();
+                        else MainActivity.super.onBackPressed();
+                    }
+                }
+            );
+        } else {
+            super.onBackPressed();
+        }
     }
 }
