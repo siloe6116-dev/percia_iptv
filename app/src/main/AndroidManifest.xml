@@ -1,12 +1,27 @@
-This XML file does not appear to have any style information associated with it. The document tree is shown below.
+
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<uses-permission android:name="android.permission.INTERNET"/>
-<application android:icon="@drawable/percia_icon" android:roundIcon="@drawable/percia_icon" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="PERCIA IPTV" android:usesCleartextTraffic="true" android:hardwareAccelerated="true">
-<activity android:name=".MainActivity" android:configChanges="orientation|screenSize|keyboardHidden" android:screenOrientation="sensor" android:exported="true">
-<intent-filter>
-<action android:name="android.intent.action.MAIN"/>
-<category android:name="android.intent.category.LAUNCHER"/>
-</intent-filter>
-</activity>
-</application>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:icon="@drawable/percia_icon"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:label="PERCIA IPTV"
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="sensor"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+    </application>
 </manifest>
