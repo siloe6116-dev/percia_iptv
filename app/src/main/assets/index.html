@@ -484,8 +484,10 @@ button:disabled {
 #seriesPlayer { display:none; position:fixed; inset:0; z-index:10010; background:#000; color:white; }
 #seriesPlayer.active { display:flex; align-items:center; justify-content:center; }
 #seriesPlayer video { width:100%; height:100%; object-fit:contain; background:#000; }
-#seriesPlayerClose { position:absolute; z-index:2; top:calc(env(safe-area-inset-top) + 12px); left:12px; border-radius:50%; width:44px; height:44px; background:#222d; color:white; border:1px solid #777; font-size:24px; }
-#seriesPlayerTitle { position:absolute; z-index:2; top:calc(env(safe-area-inset-top) + 18px); left:68px; right:12px; color:#fff; font-weight:bold; text-shadow:0 1px 4px #000; }
+#seriesPlayerClose { position:absolute; z-index:5; top:calc(env(safe-area-inset-top) + 12px); left:12px; border-radius:50%; width:52px; height:52px; background:#222d; color:white; border:1px solid #777; font-size:30px; opacity:1; transition:opacity .2s ease; }
+#seriesPlayerTitle { position:absolute; z-index:5; top:calc(env(safe-area-inset-top) + 20px); left:76px; right:12px; color:#fff; font-size:clamp(16px,3vw,28px); font-weight:bold; text-shadow:0 1px 4px #000; opacity:1; transition:opacity .2s ease; pointer-events:none; }
+#seriesPlayer.series-ui-hidden #seriesPlayerClose,
+#seriesPlayer.series-ui-hidden #seriesPlayerTitle { opacity:0; pointer-events:none; }
 
 </style>
 </head>
@@ -1372,6 +1374,16 @@ livePlayerScreen.addEventListener('click', revealLiveOverlay, true);
   const state = { all:[], filtered:[], category:'all', visible:30, categories:[], info:null };
   const el = id => document.getElementById(id);
   let seriesHls = null;
+  let seriesUiTimer = null;
+  function showSeriesControls() {
+    const player=el('seriesPlayer');
+    player.classList.remove('series-ui-hidden');
+    clearTimeout(seriesUiTimer);
+    const video=el('seriesVideo');
+    if (!video.paused && !video.ended) {
+      seriesUiTimer=setTimeout(()=>player.classList.add('series-ui-hidden'),5000);
+    }
+  }
   function msg(text,type='info') {
     const node=el('seriesMessage'); node.textContent=text; node.className='message show '+type;
   }
@@ -1471,6 +1483,7 @@ livePlayerScreen.addEventListener('click', revealLiveOverlay, true);
     stopEpisode();
     el('seriesPlayerTitle').textContent=title;
     el('seriesPlayer').classList.add('active');
+    el('seriesPlayer').classList.remove('series-ui-hidden');
     const video=el('seriesVideo');
     if(/\.m3u8($|\?)/i.test(url)&&window.Hls&&Hls.isSupported()){
       seriesHls=new Hls({enableWorker:true});seriesHls.loadSource(url);seriesHls.attachMedia(video);
@@ -1485,7 +1498,14 @@ livePlayerScreen.addEventListener('click', revealLiveOverlay, true);
   el('seriesDetailBack').addEventListener('click',()=>{el('seriesDetail').style.display='none';el('seriesGrid').style.display='grid';el('seriesCategoryList').style.display='flex';el('seriesSearch').style.display='block';filter();});
   el('seriesSearch').addEventListener('input',filter);
   el('seriesLoadMoreButton').addEventListener('click',()=>{state.visible+=30;renderCatalog();});
-  el('seriesPlayerClose').addEventListener('click',async()=>{stopEpisode();el('seriesPlayer').classList.remove('active');if(document.fullscreenElement)try{await document.exitFullscreen();}catch(_){}});
+  // Barra nativa y controles propios se muestran y ocultan sincronizados.
+  ['pointerdown','touchstart','mousemove','keydown'].forEach(evt=>{
+    el('seriesPlayer').addEventListener(evt,showSeriesControls,{passive:true});
+  });
+  el('seriesVideo').addEventListener('play',showSeriesControls);
+  el('seriesVideo').addEventListener('pause',()=>{clearTimeout(seriesUiTimer);el('seriesPlayer').classList.remove('series-ui-hidden');});
+  el('seriesVideo').addEventListener('ended',()=>{clearTimeout(seriesUiTimer);el('seriesPlayer').classList.remove('series-ui-hidden');});
+  el('seriesPlayerClose').addEventListener('click',async()=>{clearTimeout(seriesUiTimer);stopEpisode();el('seriesPlayer').classList.remove('active','series-ui-hidden');if(document.fullscreenElement)try{await document.exitFullscreen();}catch(_){}});
 })();
 
 </script>
