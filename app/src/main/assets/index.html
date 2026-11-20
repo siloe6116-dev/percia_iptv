@@ -365,6 +365,8 @@ button:disabled {
   background:#000;
 }
 .player-topbar {
+  opacity:1;
+  transition:opacity .25s ease;
   position:absolute;
   top:0;
   left:0;
@@ -378,6 +380,8 @@ button:disabled {
   pointer-events:none;
 }
 .player-topbar button { pointer-events:auto; }
+#moviePlayerScreen.controls-hidden .player-topbar { opacity:0; pointer-events:none; }
+#moviePlayerScreen.controls-hidden .player-topbar button { pointer-events:none; }
 .player-title {
   max-width:75%;
   overflow:hidden;
@@ -992,10 +996,26 @@ function stopMoviePlayback() {
   video.load();
   currentMovieUrl = '';
 }
+let movieControlsTimer = null;
+function showMovieControls() {
+  const screen = $('moviePlayerScreen');
+  screen.classList.remove('controls-hidden');
+  if (movieControlsTimer) clearTimeout(movieControlsTimer);
+  movieControlsTimer = setTimeout(() => {
+    if (screen.classList.contains('active')) screen.classList.add('controls-hidden');
+  }, 5000);
+}
+function hideMovieControls() {
+  if (movieControlsTimer) clearTimeout(movieControlsTimer);
+  movieControlsTimer = null;
+  $('moviePlayerScreen').classList.add('controls-hidden');
+}
+
 async function openMoviePlayer(movie) {
   const screen = $('moviePlayerScreen');
   const video = $('movieVideo');
   $('moviePlayerTitle').textContent = movie.name || 'PERCIA IPTV';
+  showMovieControls();
   $('movieDetail').style.display = 'none';
   clearPlayerMessage();
   stopMoviePlayback();
@@ -1041,8 +1061,10 @@ async function openMoviePlayer(movie) {
   });
 }
 async function closeMoviePlayer() {
+  if (movieControlsTimer) clearTimeout(movieControlsTimer);
+  movieControlsTimer = null;
   stopMoviePlayback();
-  $('moviePlayerScreen').classList.remove('active');
+  $('moviePlayerScreen').classList.remove('active','controls-hidden');
   if (document.fullscreenElement && document.exitFullscreen) {
     try { await document.exitFullscreen(); } catch (_) {}
   }
@@ -1054,6 +1076,14 @@ $('prepareMovieButton').addEventListener('click',() => {
   if (selectedMovie) openMoviePlayer(selectedMovie);
 });
 $('closeMoviePlayer').addEventListener('click',closeMoviePlayer);
+// Al tocar el reproductor reaparecen el título y el botón de cerrar.
+// Se vuelven a ocultar tras cinco segundos sin interacción.
+$('moviePlayerScreen').addEventListener('pointerdown', event => {
+  if (event.target.closest('#closeMoviePlayer')) return;
+  showMovieControls();
+});
+$('moviePlayerScreen').addEventListener('mousemove', showMovieControls);
+$('moviePlayerScreen').addEventListener('keydown', showMovieControls);
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && $('moviePlayerScreen').classList.contains('active')) {
     // Si Escape sale del fullscreen, cerrar también el reproductor.
