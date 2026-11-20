@@ -1204,23 +1204,49 @@ $('liveSearch').addEventListener('input',applyLiveSearch);
 $('openLiveButton').addEventListener('click',openLiveTV);
 $('liveBackButton').addEventListener('click',()=>{liveScreen.style.display='none';$('catalogScreen').style.display='block';window.scrollTo({top:0,behavior:'smooth'});});
 function liveStreamUrl(ch) {
+  // Xtream entrega TV en vivo como HLS cuando se solicita la extensión m3u8.
+  // No usar container_extension='ts' con Hls.js: Hls.js necesita un manifiesto .m3u8.
   const base=normalizeServer(activeProfile.server);
   const id=encodeURIComponent(ch.stream_id);
   const user=encodeURIComponent(activeProfile.username), pass=encodeURIComponent(activeProfile.password);
-  const ext=String(ch.container_extension||'ts').replace(/[^a-z0-9]/gi,'')||'ts';
-  return `${base}/live/${user}/${pass}/${id}.${ext}`;
+  return `${base}/live/${user}/${pass}/${id}.m3u8`;
+}
+function showLivePlayerError(text) {
+  const el=$('livePlayerMessage');
+  el.textContent=text;
+  el.classList.add('show');
 }
 function showLiveControls(){ $('livePlayerTopbar').classList.remove('hidden');clearTimeout(liveHideTimer);liveHideTimer=setTimeout(()=>$('livePlayerTopbar').classList.add('hidden'),5000); }
 async function playLiveChannel(ch) {
-  stopLivePlayback(); $('livePlayerTitle').textContent=ch.name||'TV EN VIVO'; $('livePlayerMessage').classList.remove('show');
-  livePlayerScreen.classList.add('active'); showLiveControls();
+  stopLivePlayback();
+  $('livePlayerTitle').textContent=ch.name||'TV EN VIVO';
+  $('livePlayerMessage').classList.remove('show');
+  $('livePlayerMessage').textContent='Conectando al canal...';
+  livePlayerScreen.classList.add('active');
+  showLiveControls();
   const url=liveStreamUrl(ch);
+  liveVideo.onerror=()=>showLivePlayerError('No se pudo abrir el flujo HLS. Verifica que tu servidor Xtream permita enlaces .m3u8 y que el canal esté activo.');
   if(window.Hls && Hls.isSupported()){
-    liveHls=new Hls({enableWorker:true}); liveHls.loadSource(url); liveHls.attachMedia(liveVideo);
-    liveHls.on(Hls.Events.ERROR,(_,data)=>{if(data.fatal){$('livePlayerMessage').textContent='No se pudo reproducir este canal. Comprueba el formato y el acceso del servidor.';$('livePlayerMessage').classList.add('show');}});
-  } else if(liveVideo.canPlayType('application/vnd.apple.mpegurl')) { liveVideo.src=url; }
-  else { liveVideo.src=url; }
-  try { await liveVideo.play(); } catch(e) { $('livePlayerMessage').textContent='Pulsa reproducir para iniciar el canal.';$('livePlayerMessage').classList.add('show'); }
+    liveHls=new Hls({enableWorker:true, lowLatencyMode:true, backBufferLength:30});
+    liveHls.on(Hls.Events.ERROR,(_,data)=>{
+      if(data.fatal){
+        const detail=data.details || data.type || 'error desconocido';
+        showLivePlayerError('Error HLS: '+detail+'. El servidor debe permitir reproducción HLS (.m3u8).');
+        liveHls.destroy(); liveHls=null;
+      }
+    });
+    liveHls.on(Hls.Events.MANIFEST_PARSED,()=>{
+      $('livePlayerMessage').classList.remove('show');
+      liveVideo.play().catch(()=>showLivePlayerError('Pulsa reproducir para iniciar el canal.'));
+    });
+    liveHls.loadSource(url);
+    liveHls.attachMedia(liveVideo);
+  } else if(liveVideo.canPlayType('application/vnd.apple.mpegurl')) {
+    liveVideo.src=url;
+    liveVideo.play().catch(()=>showLivePlayerError('El teléfono no pudo iniciar el flujo HLS.'));
+  } else {
+    showLivePlayerError('Este WebView no admite HLS. Actualiza Android System WebView o Chrome.');
+  }
 }
 function stopLivePlayback(){clearTimeout(liveHideTimer);if(liveHls){liveHls.destroy();liveHls=null;}liveVideo.pause();liveVideo.removeAttribute('src');liveVideo.load();}
 function closeLivePlayer(){stopLivePlayback();livePlayerScreen.classList.remove('active');}
