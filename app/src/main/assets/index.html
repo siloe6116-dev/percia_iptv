@@ -502,6 +502,11 @@ button:disabled {
 #seriesPlayer.series-ui-hidden #seriesPlayerClose,
 #seriesPlayer.series-ui-hidden #seriesPlayerTitle { opacity:0; pointer-events:none; }
 
+
+.favorite-card-wrap{position:relative;min-width:0}
+.favorite-toggle{position:absolute;top:7px;right:7px;z-index:3;width:34px;height:34px;padding:0;border-radius:50%;background:#111d;color:#fff;border:1px solid #ffffff55;font-size:18px;line-height:1}
+.favorite-toggle.is-favorite{color:#e7b9b9;background:#261313;border-color:#b86b6b}
+#favoritesScreen .favorite-card-wrap{cursor:pointer}
 </style>
 </head>
 
@@ -565,6 +570,7 @@ button:disabled {
   <button class="secondary full" id="backButton">← VOLVER</button>
   <button class="full" id="openLiveButton" style="margin-top:8px">📺 TV EN VIVO</button>
   <button class="secondary full" id="openSeriesButton" style="margin-top:8px">🎬 SERIES</button>
+  <button class="secondary full" id="openFavoritesButton" style="margin-top:8px">♥ FAVORITOS</button>
 
   <div class="catalog-header">
     <h2>Películas</h2>
@@ -583,6 +589,19 @@ button:disabled {
     CARGAR MÁS
   </button>
 
+</section>
+
+<section id="favoritesScreen" style="display:none">
+  <button class="secondary full" id="favoritesBackButton">← VOLVER AL CATÁLOGO</button>
+  <div class="catalog-header"><h2>FAVORITOS</h2><span class="catalog-count" id="favoritesCount">0 elementos</span></div>
+  <div class="category-list" id="favoritesFilters">
+    <button class="category-chip active" data-fav-filter="all">Todos</button>
+    <button class="category-chip" data-fav-filter="movie">Películas</button>
+    <button class="category-chip" data-fav-filter="series">Series</button>
+    <button class="category-chip" data-fav-filter="live">TV en vivo</button>
+  </div>
+  <div class="movie-grid" id="favoritesGrid"></div>
+  <div id="favoritesEmpty" class="empty" style="display:none">Todavía no tienes favoritos. Pulsa ♥ en una película, serie o canal.</div>
 </section>
 
 <section id="liveScreen" style="display:none">
@@ -1030,6 +1049,7 @@ function renderMovies() {
   items.forEach(movie => {
     const card = document.createElement('div');
     card.className = 'movie-card';
+    const wrap=document.createElement('div'); wrap.className='favorite-card-wrap';
 
     if (movie.stream_icon) {
       const img = document.createElement('img');
@@ -1290,7 +1310,8 @@ function renderLiveChannels() {
     if(ch.stream_icon){const img=document.createElement('img');img.className='live-channel-logo';img.src=ch.stream_icon;img.alt=ch.name||'Canal';img.loading='lazy';img.onerror=()=>{const p=document.createElement('div');p.className='live-channel-placeholder';p.textContent='📺';img.replaceWith(p);};card.appendChild(img);}
     else {const p=document.createElement('div');p.className='live-channel-placeholder';p.textContent='📺';card.appendChild(p);}
     const name=document.createElement('span');name.className='live-channel-name';name.textContent=ch.name||'Canal';card.appendChild(name);
-    card.addEventListener('click',()=>playLiveChannel(ch));grid.appendChild(card);
+    card.addEventListener('click',()=>playLiveChannel(ch));
+    const wrap=document.createElement('div');wrap.className='favorite-card-wrap';wrap.append(card,PerciaFavorites.button('live',ch));grid.appendChild(wrap);
   });
   if(!liveFilteredChannels.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No hay canales para mostrar.';grid.appendChild(empty);}
 }
@@ -1382,6 +1403,30 @@ livePlayerScreen.addEventListener('click', revealLiveOverlay, true);
 
 
 
+// ================= FAVORITOS PERSISTENTES =================
+const PerciaFavorites = (() => {
+  const KEY='percia_iptv_favorites_v1';
+  let items=[];
+  try { items=JSON.parse(localStorage.getItem(KEY)||'[]'); if(!Array.isArray(items)) items=[]; } catch(_) { items=[]; }
+  const keyOf=(type,item)=>type+':'+String(item.stream_id||item.series_id||item.id||item.num||item.name||'');
+  const has=(type,item)=>items.some(x=>x.key===keyOf(type,item));
+  function toggle(type,item){
+    const key=keyOf(type,item);
+    if(has(type,item)) items=items.filter(x=>x.key!==key);
+    else items.push({key,type,item:{...item}});
+    try{localStorage.setItem(KEY,JSON.stringify(items));}catch(_){}
+    document.dispatchEvent(new CustomEvent('percia:favorites-changed'));
+    return has(type,item);
+  }
+  function button(type,item){
+    const b=document.createElement('button');b.type='button';
+    const update=()=>{const active=has(type,item);b.className='favorite-toggle'+(active?' is-favorite':'');b.textContent=active?'♥':'♡';b.title=active?'Quitar de favoritos':'Agregar a favoritos';};
+    update();b.addEventListener('click',e=>{e.stopPropagation();toggle(type,item);update();});
+    return b;
+  }
+  return {has,toggle,button,all:()=>items.slice()};
+})();
+
 // ================= SERIES (módulo independiente) =================
 (() => {
   const state = { all:[], filtered:[], category:'all', visible:30, categories:[], info:null };
@@ -1425,7 +1470,8 @@ livePlayerScreen.addEventListener('click', revealLiveOverlay, true);
       img.onerror=()=>{img.style.visibility='hidden';};
       const name=document.createElement('div'); name.className='series-name'; name.textContent=item.name||'Serie';
       const meta=document.createElement('div'); meta.className='series-meta'; meta.textContent=item.year||'Ver temporadas';
-      card.append(img,name,meta); card.addEventListener('click',()=>openSeriesDetails(item)); grid.appendChild(card);
+      card.append(img,name,meta); card.addEventListener('click',()=>openSeriesDetails(item));
+      const wrap=document.createElement('div');wrap.className='favorite-card-wrap';wrap.append(card,PerciaFavorites.button('series',item));grid.appendChild(wrap);
     });
     el('seriesCount').textContent=state.filtered.length+' series';
     el('seriesLoadMoreButton').style.display=state.visible<state.filtered.length?'block':'none';
@@ -1520,6 +1566,48 @@ livePlayerScreen.addEventListener('click', revealLiveOverlay, true);
   el('seriesVideo').addEventListener('ended',()=>{clearTimeout(seriesUiTimer);el('seriesPlayer').classList.remove('series-ui-hidden');});
   el('seriesPlayerClose').addEventListener('click',async()=>{clearTimeout(seriesUiTimer);stopEpisode();el('seriesPlayer').classList.remove('active','series-ui-hidden');if(document.fullscreenElement)try{await document.exitFullscreen();}catch(_){}});
 })();
+
+
+// Pantalla y acciones de Favoritos
+let currentFavoritesFilter='all';
+function renderFavorites(){
+  const grid=$('favoritesGrid');grid.replaceChildren();
+  const all=PerciaFavorites.all().filter(x=>currentFavoritesFilter==='all'||x.type===currentFavoritesFilter);
+  $('favoritesCount').textContent=all.length+' elementos';
+  $('favoritesEmpty').style.display=all.length?'none':'block';
+  all.forEach(entry=>{
+    const item=entry.item||{}, type=entry.type;
+    const wrap=document.createElement('div');wrap.className='favorite-card-wrap';
+    const card=document.createElement('button');card.type='button';card.className='movie-card';card.style.cssText='width:100%;text-align:left;padding:0;color:inherit;background:#191919';
+    const image=document.createElement('img');image.className='poster';image.loading='lazy';image.alt=item.name||'Favorito';
+    image.src=item.stream_icon||item.cover||'';
+    image.onerror=()=>{image.style.display='none';};
+    const title=document.createElement('div');title.className='movie-name';title.textContent=item.name||'Elemento';
+    card.append(image,title);
+    card.addEventListener('click',()=>{
+      $('favoritesScreen').style.display='none';
+      if(type==='movie'){ $('catalogScreen').style.display='block'; showMovieDetail(item); }
+      else if(type==='series'){ $('seriesScreen').style.display='block'; openSeriesDetails(item); }
+      else if(type==='live'){ $('liveScreen').style.display='block'; playLiveChannel(item); }
+    });
+    wrap.append(card,PerciaFavorites.button(type,item));grid.appendChild(wrap);
+  });
+}
+$('openFavoritesButton').addEventListener('click',()=>{
+  $('catalogScreen').style.display='none';$('liveScreen').style.display='none';$('seriesScreen').style.display='none';
+  $('favoritesScreen').style.display='block';currentFavoritesFilter='all';
+  document.querySelectorAll('[data-fav-filter]').forEach(b=>b.classList.toggle('active',b.dataset.favFilter==='all'));
+  renderFavorites();
+});
+$('favoritesBackButton').addEventListener('click',()=>{
+  $('favoritesScreen').style.display='none';$('catalogScreen').style.display='block';
+});
+document.querySelectorAll('[data-fav-filter]').forEach(b=>b.addEventListener('click',()=>{
+  currentFavoritesFilter=b.dataset.favFilter;
+  document.querySelectorAll('[data-fav-filter]').forEach(x=>x.classList.toggle('active',x===b));
+  renderFavorites();
+}));
+document.addEventListener('percia:favorites-changed',()=>{if($('favoritesScreen').style.display!=='none')renderFavorites();});
 
 </script>
 
