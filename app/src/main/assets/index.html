@@ -418,6 +418,24 @@ button:disabled {
 }
 #moviePlayerMessage.show { display:block; }
 
+
+/* TV EN VIVO: estilos aislados; no alteran el catálogo de Películas */
+#liveScreen .movie-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.live-channel-card { background:#191919;border:1px solid #303030;border-radius:8px;overflow:hidden;min-width:0;cursor:pointer;text-align:center;padding:8px;color:#f5f2eb; }
+.live-channel-logo { width:100%;height:76px;object-fit:contain;background:#101010;border-radius:5px;padding:7px; }
+.live-channel-placeholder { height:76px;display:grid;place-items:center;background:#101010;color:#c9aa68;font-size:25px;border-radius:5px; }
+.live-channel-name { display:block;font-size:11px;line-height:1.3;margin-top:7px;overflow-wrap:anywhere; }
+#livePlayerScreen { display:none;position:fixed;inset:0;background:#000;z-index:10000;align-items:center;justify-content:center; }
+#livePlayerScreen.active { display:flex; }
+#liveVideo { width:100%;height:100%;object-fit:contain;background:#000; }
+.live-player-topbar { position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 12px) 15px 12px;background:linear-gradient(#000c,transparent);transition:opacity .25s; }
+.live-player-topbar.hidden { opacity:0;pointer-events:none; }
+#livePlayerTitle { color:white;font-size:14px;font-weight:bold;text-shadow:0 1px 4px #000; }
+#closeLivePlayer { width:40px;height:40px;border-radius:50%;background:#242424dd;border:1px solid #ffffff40;color:white;font-size:25px; }
+#livePlayerMessage { position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 65px);display:none;background:#261b1bdf;color:#fff;padding:10px;border-radius:8px;font-size:12px; }
+#livePlayerMessage.show { display:block; }
+@media(min-width:600px){#liveScreen .movie-grid{grid-template-columns:repeat(4,minmax(0,1fr));}.live-channel-logo,.live-channel-placeholder{height:100px;}}
+
 </style>
 </head>
 
@@ -479,6 +497,7 @@ button:disabled {
 <section id="catalogScreen">
 
   <button class="secondary full" id="backButton">← VOLVER</button>
+  <button class="full" id="openLiveButton" style="margin-top:8px">📺 TV EN VIVO</button>
 
   <div class="catalog-header">
     <h2>Películas</h2>
@@ -498,7 +517,28 @@ button:disabled {
   </button>
 
 </section>
+
+<section id="liveScreen" style="display:none">
+  <button class="secondary full" id="liveBackButton">← VOLVER A PELÍCULAS</button>
+  <div class="catalog-header">
+    <h2>TV EN VIVO</h2>
+    <span class="catalog-count" id="liveCount">0 canales</span>
+  </div>
+  <input id="liveSearch" placeholder="Buscar canal..." autocomplete="off">
+  <div class="category-list" id="liveCategoryList"></div>
+  <div id="liveMessage" class="message"></div>
+  <div class="movie-grid" id="liveGrid"></div>
+</section>
 </main>
+
+<div id="livePlayerScreen" aria-label="Reproductor de TV en vivo">
+  <video id="liveVideo" controls playsinline webkit-playsinline preload="metadata"></video>
+  <div class="live-player-topbar" id="livePlayerTopbar">
+    <div id="livePlayerTitle">TV EN VIVO</div>
+    <button id="closeLivePlayer" type="button" aria-label="Cerrar reproductor">×</button>
+  </div>
+  <div id="livePlayerMessage"></div>
+</div>
 
 <div class="movie-detail" id="movieDetail">
   <div class="detail-box">
@@ -1093,6 +1133,100 @@ document.addEventListener('keydown', event => {
 
 
 loadProfiles();
+
+
+// ================= TV EN VIVO (módulo independiente) =================
+let liveAllChannels = [];
+let liveFilteredChannels = [];
+let liveCurrentCategory = 'all';
+let liveHls = null;
+let liveHideTimer = null;
+const liveScreen = $('liveScreen');
+const livePlayerScreen = $('livePlayerScreen');
+const liveVideo = $('liveVideo');
+
+function liveMessage(text,type='info') {
+  const el=$('liveMessage'); el.textContent=text; el.className='message show '+type;
+}
+function renderLiveCategories(categories) {
+  const wrap=$('liveCategoryList'); wrap.replaceChildren();
+  const add=(name,id)=>{
+    const b=document.createElement('button');
+    b.className='category-chip'+(String(id)===String(liveCurrentCategory)?' active':'');
+    b.textContent=name;
+    b.addEventListener('click',()=>{liveCurrentCategory=String(id);renderLiveCategories(categories);loadLiveChannels(id);});
+    wrap.appendChild(b);
+  };
+  add('Todos','all');
+  categories.forEach(c=>add(c.category_name||'Sin categoría',c.category_id));
+}
+async function openLiveTV() {
+  if(!activeProfile){liveMessage('Primero conecta un perfil Xtream.','error');return;}
+  $('catalogScreen').style.display='none'; $('connectionScreen').style.display='none'; liveScreen.style.display='block';
+  $('liveSearch').value=''; liveCurrentCategory='all';
+  liveMessage('Cargando categorías de TV en vivo...');
+  try {
+    const cats=await fetchJson(apiUrl(activeProfile,{action:'get_live_categories'}));
+    if(!Array.isArray(cats)) throw new Error('El servidor no devolvió categorías válidas.');
+    renderLiveCategories(cats);
+    await loadLiveChannels('all');
+  } catch(e) { liveMessage('No se pudieron cargar las categorías: '+e.message,'error'); }
+}
+async function loadLiveChannels(categoryId='all') {
+  liveMessage('Cargando canales...'); $('liveGrid').replaceChildren();
+  try {
+    const params={action:'get_live_streams'};
+    if(String(categoryId)!=='all') params.category_id=categoryId;
+    const data=await fetchJson(apiUrl(activeProfile,params));
+    if(!Array.isArray(data)) throw new Error('Respuesta de canales no válida.');
+    liveAllChannels=data; applyLiveSearch();
+    liveMessage(data.length? 'Canales cargados.':'Esta categoría no tiene canales.',data.length?'success':'info');
+  } catch(e) { liveMessage('Error al cargar canales: '+e.message,'error'); }
+}
+function applyLiveSearch() {
+  const term=$('liveSearch').value.trim().toLowerCase();
+  liveFilteredChannels=liveAllChannels.filter(c=>String(c.name||'').toLowerCase().includes(term));
+  renderLiveChannels();
+}
+function renderLiveChannels() {
+  const grid=$('liveGrid'); grid.replaceChildren();
+  $('liveCount').textContent=liveFilteredChannels.length+' canales';
+  liveFilteredChannels.forEach(ch=>{
+    const card=document.createElement('button'); card.type='button'; card.className='live-channel-card';
+    if(ch.stream_icon){const img=document.createElement('img');img.className='live-channel-logo';img.src=ch.stream_icon;img.alt=ch.name||'Canal';img.loading='lazy';img.onerror=()=>{const p=document.createElement('div');p.className='live-channel-placeholder';p.textContent='📺';img.replaceWith(p);};card.appendChild(img);}
+    else {const p=document.createElement('div');p.className='live-channel-placeholder';p.textContent='📺';card.appendChild(p);}
+    const name=document.createElement('span');name.className='live-channel-name';name.textContent=ch.name||'Canal';card.appendChild(name);
+    card.addEventListener('click',()=>playLiveChannel(ch));grid.appendChild(card);
+  });
+  if(!liveFilteredChannels.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No hay canales para mostrar.';grid.appendChild(empty);}
+}
+$('liveSearch').addEventListener('input',applyLiveSearch);
+$('openLiveButton').addEventListener('click',openLiveTV);
+$('liveBackButton').addEventListener('click',()=>{liveScreen.style.display='none';$('catalogScreen').style.display='block';window.scrollTo({top:0,behavior:'smooth'});});
+function liveStreamUrl(ch) {
+  const base=normalizeServer(activeProfile.server);
+  const id=encodeURIComponent(ch.stream_id);
+  const user=encodeURIComponent(activeProfile.username), pass=encodeURIComponent(activeProfile.password);
+  const ext=String(ch.container_extension||'ts').replace(/[^a-z0-9]/gi,'')||'ts';
+  return `${base}/live/${user}/${pass}/${id}.${ext}`;
+}
+function showLiveControls(){ $('livePlayerTopbar').classList.remove('hidden');clearTimeout(liveHideTimer);liveHideTimer=setTimeout(()=>$('livePlayerTopbar').classList.add('hidden'),5000); }
+async function playLiveChannel(ch) {
+  stopLivePlayback(); $('livePlayerTitle').textContent=ch.name||'TV EN VIVO'; $('livePlayerMessage').classList.remove('show');
+  livePlayerScreen.classList.add('active'); showLiveControls();
+  const url=liveStreamUrl(ch);
+  if(window.Hls && Hls.isSupported()){
+    liveHls=new Hls({enableWorker:true}); liveHls.loadSource(url); liveHls.attachMedia(liveVideo);
+    liveHls.on(Hls.Events.ERROR,(_,data)=>{if(data.fatal){$('livePlayerMessage').textContent='No se pudo reproducir este canal. Comprueba el formato y el acceso del servidor.';$('livePlayerMessage').classList.add('show');}});
+  } else if(liveVideo.canPlayType('application/vnd.apple.mpegurl')) { liveVideo.src=url; }
+  else { liveVideo.src=url; }
+  try { await liveVideo.play(); } catch(e) { $('livePlayerMessage').textContent='Pulsa reproducir para iniciar el canal.';$('livePlayerMessage').classList.add('show'); }
+}
+function stopLivePlayback(){clearTimeout(liveHideTimer);if(liveHls){liveHls.destroy();liveHls=null;}liveVideo.pause();liveVideo.removeAttribute('src');liveVideo.load();}
+function closeLivePlayer(){stopLivePlayback();livePlayerScreen.classList.remove('active');}
+$('closeLivePlayer').addEventListener('click',closeLivePlayer);
+livePlayerScreen.addEventListener('click',e=>{if(e.target===livePlayerScreen||e.target===liveVideo)showLiveControls();});
+
 </script>
 
 </body>
