@@ -1049,7 +1049,8 @@ function renderMovies() {
   items.forEach(movie => {
     const card = document.createElement('div');
     card.className = 'movie-card';
-    const wrap=document.createElement('div'); wrap.className='favorite-card-wrap';
+    const wrap = document.createElement('div');
+    wrap.className = 'favorite-card-wrap';
 
     if (movie.stream_icon) {
       const img = document.createElement('img');
@@ -1079,7 +1080,11 @@ function renderMovies() {
 
     card.append(title);
     card.addEventListener('click',() => showMovieDetail(movie));
-    grid.appendChild(card);
+
+    // El corazón queda superpuesto al póster, sin interferir con abrir la película.
+    wrap.appendChild(card);
+    wrap.appendChild(PerciaFavorites.button('movie', movie));
+    grid.appendChild(wrap);
   });
 
   $('loadMoreButton').style.display =
@@ -1590,7 +1595,12 @@ function renderFavorites(){
       else if(type==='series'){ $('seriesScreen').style.display='block'; openSeriesDetails(item); }
       else if(type==='live'){ $('liveScreen').style.display='block'; playLiveChannel(item); }
     });
-    wrap.append(card,PerciaFavorites.button(type,item));grid.appendChild(wrap);
+    const removeButton = PerciaFavorites.button(type,item);
+    removeButton.classList.add('favorite-remove-button');
+    removeButton.textContent = '♥ Quitar de favoritos';
+    removeButton.style.cssText = 'position:relative;top:auto;right:auto;width:100%;height:auto;margin-top:7px;padding:9px 10px;border-radius:8px;font-size:13px;background:#302020;color:#f0caca;border:1px solid #8b5555;pointer-events:auto';
+    wrap.append(card,removeButton);
+    grid.appendChild(wrap);
   });
 }
 $('openFavoritesButton').addEventListener('click',()=>{
