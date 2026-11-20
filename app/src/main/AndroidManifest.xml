@@ -5,9 +5,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:allowBackup="true"
         android:icon="@drawable/percia_icon"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:roundIcon="@drawable/percia_icon"
         android:label="PERCIA IPTV"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="true"
         android:hardwareAccelerated="true">
 
